@@ -32,18 +32,24 @@ function ProfileRelationsBox(props) {
 export default function Home() {
 
     const { query } = useRouter();
-    console.log(query);
-    let githubUser = query.id;
-    console.log(githubUser);
+
+    console.log(query.id);
+
+    const githubUser = (query.id == "undefined" ? query.id : "rafaballerini");
 
     const url_config = "?per_page=6&page=1"
     const urlGitHub = "https://api.github.com/users/";
 
     const [communitys, setCommunitys] = React.useState([]);
 
-
     const [user, setUser] = React.useState([]);
+
+    const [following, setFollowing] = React.useState([]);
+
+    const [followers, setFollowers] = React.useState([]);
+
     React.useEffect(() => {
+
         fetch(`${urlGitHub}${githubUser}`) //Usuario do GitHub
             .then((response) => {
                 return response.json();
@@ -54,10 +60,7 @@ export default function Home() {
             .catch((error) => {
                 console.log(error);
             });
-    }, []);
 
-    const [following, setFollowing] = React.useState([]);
-    React.useEffect(() => {
         fetch(`${urlGitHub}${githubUser}/following${url_config}`) //seguindo
             .then((response) => {
                 return response.json();
@@ -68,10 +71,7 @@ export default function Home() {
             .catch((error) => {
                 console.log(error);
             });
-    }, []);
 
-    const [followers, setFollowers] = React.useState([]);
-    React.useEffect(() => {
         fetch(`${urlGitHub}${githubUser}/followers${url_config}`) //seguidores
             .then((response) => {
                 return response.json();
@@ -83,6 +83,7 @@ export default function Home() {
                 console.log(error);
             });
     }, []);
+
 
     return (
         <>
