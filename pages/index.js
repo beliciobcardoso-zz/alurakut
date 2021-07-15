@@ -28,49 +28,77 @@ function ProfileRelationsBox(props) {
   )
 }
 export default function Home() {
+  const token = process.env.NEXT_PUBLIC_TOKEN;
+
   const url_config = "?per_page=6&page=2"
   const urlGitHub = "https://api.github.com/users/";
   const githubUser = "beliciobcardoso";
 
   const [communitys, setCommunitys] = React.useState([]);
 
-
   const [user, setUser] = React.useState([]);
-  React.useEffect(() => {
-    fetch(`${urlGitHub}${githubUser}`) //Usuario do GitHub
-      .then((response) => {
-        return response.json();
-      })
-      .then((json) => {
-        setUser(json);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }, []);
 
   const [following, setFollowing] = React.useState([]);
+
+  const [followers, setFollowers] = React.useState([]);
+
   React.useEffect(() => {
-    fetch(`${urlGitHub}${githubUser}/following${url_config}`) //seguindo
-      .then((response) => {
-        return response.json();
-      })
-      .then((json) => {
-        setFollowing(json);
+
+    //Usuario do GitHub
+    fetch(`${urlGitHub}${githubUser}`)
+      .then(async response => {
+        const json = await response.json();
+        return setUser(json);
       })
       .catch((error) => {
         console.log(error);
       });
-  }, []);
 
-  const [followers, setFollowers] = React.useState([]);
-  React.useEffect(() => {
-    fetch(`${urlGitHub}${githubUser}/followers${url_config}`) //seguidores
-      .then((response) => {
-        return response.json();
+    // API GitHub seguindo
+    fetch(`${urlGitHub}${githubUser}/following${url_config}`) //
+      .then(async response => {
+        const json = await response.json();
+        return setFollowing(json);
       })
-      .then((json) => {
-        setFollowers(json);
+      .catch((error) => {
+        console.log(error);
+      });
+
+    // API GitHub seguidores
+    fetch(`${urlGitHub}${githubUser}/followers${url_config}`)
+      .then(async response => {
+        const json = await response.json();
+        return setFollowers(json);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    // API DATOCMS
+    fetch(
+      'https://graphql.datocms.com/',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': token,
+        },
+        body: JSON.stringify({
+          query: `query{
+            allCommunities(orderBy: id_DESC, first: "6") {
+              id
+              title
+              imageUrl
+              creatorSlug
+            }
+          }`
+        }),
+      }
+    )
+      .then(async res => {
+        const response = await res.json();
+        setCommunitys(response.data.allCommunities);
       })
       .catch((error) => {
         console.log(error);
@@ -105,12 +133,23 @@ export default function Home() {
               const communityImage = communityDados.get('image');
 
               const community = {
-                id: new Date().toISOString(),
                 title: communityTitle,
-                image: communityImage,
+                imageUrl: communityImage,
+                creatorSlug: githubUser,
               };
-              const communitysUpdate = [...communitys, community];
-              setCommunitys(communitysUpdate);
+
+              fetch('/api/communitys', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(community),
+              }).then(async response => {
+                const dados = await response.json()
+                const community = dados.recordCreated;
+                const communitysCreate = [...communitys, community];
+                setCommunitys(communitysCreate);
+              })
 
             }}>
               <div>
@@ -163,8 +202,8 @@ export default function Home() {
               {communitys.map((itemAtual) => {
                 return (
                   <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.title}`} >
-                      <img src={itemAtual.image} />
+                    <a href={`/communitys/${itemAtual.id}`} >
+                      <img src={itemAtual.imageUrl} />
                       <span>{itemAtual.title}</span>
                     </a>
                   </li>
