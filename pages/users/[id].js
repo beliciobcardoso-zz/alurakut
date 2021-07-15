@@ -31,10 +31,13 @@ function ProfileRelationsBox(props) {
 }
 export default function Home() {
 
+    // conseguir pesquisado esta opção para pega paramento da url
     const { query } = useRouter();
 
+    //pega o paramento na url mas iniciar como undefined
     console.log(query.id);
 
+    // estou preso nesta parte não conseguir resolver o problema
     const githubUser = (query.id == "undefined" ? query.id : "rafaballerini");
 
     const url_config = "?per_page=6&page=1"
