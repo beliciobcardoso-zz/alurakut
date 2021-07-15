@@ -1,48 +1,95 @@
 import React from 'react';
 import { MainGrid } from "../src/components/MainGrid";
 import { Box } from "../src/components/Box";
-import { AlurakutMenu, AlurakutProfileSidebarMenuDefault, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
+import { AlurakutMenu, AlurakutMenuProfileSidebar, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
-function ProfileSidebar(props) {
+function ProfileRelationsBox(props) {
   return (
-    <Box as="aside">
-      <img src={`https://github.com/${props.githubUser}.png`} style={{ borderRadius: '8px' }} />
-      <hr />
-      <p>
-        <a className="boxLink" href={`https://github.com/${props.githubUser}`}>
-          @{props.githubUser}
-        </a>
-      </p>
-      <hr />
-      <AlurakutProfileSidebarMenuDefault />
-    </Box >
+    <ProfileRelationsBoxWrapper >
+      <h2 className="smallTitle">
+        {props.title} {props.items.length}
+      </h2>
+      <ul>
+        {
+          props.items.map((item, index) => {
+            return (
+              <li key={item.id}>
+                <a href={`/users/${item.login}`} >
+                  <img src={item.avatar_url} />
+                  <span>{item.login}</span>
+                </a>
+              </li>
+            )
+          })}
+
+      </ul>
+    </ProfileRelationsBoxWrapper>
   )
 }
-
 export default function Home() {
+  const url_config = "?per_page=6&page=2"
+  const urlGitHub = "https://api.github.com/users/";
   const githubUser = "beliciobcardoso";
+
   const [communitys, setCommunitys] = React.useState([]);
-  const pessoasFavoritas = [
-    'juunegreiros',
-    'omariosouto',
-    'peas',
-    'rafaballerini',
-    'marcobrunodev',
-    'felipefialho'
-  ];
+
+
+  const [user, setUser] = React.useState([]);
+  React.useEffect(() => {
+    fetch(`${urlGitHub}${githubUser}`) //Usuario do GitHub
+      .then((response) => {
+        return response.json();
+      })
+      .then((json) => {
+        setUser(json);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  const [following, setFollowing] = React.useState([]);
+  React.useEffect(() => {
+    fetch(`${urlGitHub}${githubUser}/following${url_config}`) //seguindo
+      .then((response) => {
+        return response.json();
+      })
+      .then((json) => {
+        setFollowing(json);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
+
+  const [followers, setFollowers] = React.useState([]);
+  React.useEffect(() => {
+    fetch(`${urlGitHub}${githubUser}/followers${url_config}`) //seguidores
+      .then((response) => {
+        return response.json();
+      })
+      .then((json) => {
+        setFollowers(json);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
 
   return (
     <>
       <AlurakutMenu githubUser={githubUser} />
       <MainGrid>
         <div className="profileArea" style={{ gridArea: 'profileArea' }}>
-          <ProfileSidebar githubUser={githubUser} />
+          <Box as="aside">
+            <AlurakutMenuProfileSidebar user={user} githubUser={githubUser} />
+          </Box >
         </div>
         <div className="welcomeArea" style={{ gridArea: 'welcomeArea' }}>
           <Box>
             <h1 className="title">
-              Bem-vindo(a), {githubUser}
+              Bem-vindo(a), {user.name}
             </h1>
 
             <OrkutNostalgicIconSet />
@@ -88,6 +135,27 @@ export default function Home() {
 
           <ProfileRelationsBoxWrapper>
             <h2 className="smallTitle">
+              Seguido ({following.length})
+            </h2>
+
+            <ul>
+              {following.map((itemAtual, index) => {
+                return (
+                  <li key={itemAtual.id}>
+                    <a href={`/users/${itemAtual.login}`} >
+                      <img src={`${itemAtual.avatar_url}`} />
+                      <span>{itemAtual.login}</span>
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          </ProfileRelationsBoxWrapper>
+
+          <ProfileRelationsBox title="Seguidores" items={followers} />
+
+          <ProfileRelationsBoxWrapper>
+            <h2 className="smallTitle">
               Comunidades ({communitys.length})
             </h2>
 
@@ -98,24 +166,6 @@ export default function Home() {
                     <a href={`/users/${itemAtual.title}`} >
                       <img src={itemAtual.image} />
                       <span>{itemAtual.title}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </ProfileRelationsBoxWrapper>
-          <ProfileRelationsBoxWrapper>
-            <h2 className="smallTitle">
-              Pessoas da comunidade ({pessoasFavoritas.length})
-            </h2>
-
-            <ul>
-              {pessoasFavoritas.map((itemAtual) => {
-                return (
-                  <li key={itemAtual}>
-                    <a href={`/users/${itemAtual}`} >
-                      <img src={`https://github.com/${itemAtual}.png`} />
-                      <span>{itemAtual}</span>
                     </a>
                   </li>
                 )
