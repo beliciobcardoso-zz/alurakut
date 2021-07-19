@@ -38,7 +38,7 @@ export default function Home() {
     console.log(query.id);
 
     // estou preso nesta parte não conseguir resolver o problema
-    const githubUser = (query.id == "undefined" ? query.id : "rafaballerini");
+    const githubUser = query.id;
 
     const url_config = "?per_page=6&page=1"
     const urlGitHub = "https://api.github.com/users/";
@@ -64,7 +64,7 @@ export default function Home() {
                 console.log(error);
             });
 
-        fetch(`${urlGitHub}${githubUser}/following${url_config}`) //seguindo
+        fetch(`${urlGitHub}${githubUser}/following`) //seguindo
             .then((response) => {
                 return response.json();
             })
@@ -75,7 +75,7 @@ export default function Home() {
                 console.log(error);
             });
 
-        fetch(`${urlGitHub}${githubUser}/followers${url_config}`) //seguidores
+        fetch(`${urlGitHub}${githubUser}/followers`) //seguidores
             .then((response) => {
                 return response.json();
             })

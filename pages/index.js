@@ -1,14 +1,16 @@
 import React from 'react';
+import nookies from 'nookies';
+import jwt from 'jsonwebtoken';
 import { MainGrid } from "../src/components/MainGrid";
 import { Box } from "../src/components/Box";
-import { AlurakutMenu, AlurakutMenuProfileSidebar, OrkutNostalgicIconSet } from '../src/lib/AlurakutCommons';
+import { AlurakutMenu, AlurakutMenuProfileSidebar } from '../src/lib/AlurakutCommons';
 import { ProfileRelationsBoxWrapper } from '../src/components/ProfileRelations';
 
 function ProfileRelationsBox(props) {
   return (
     <ProfileRelationsBoxWrapper >
       <h2 className="smallTitle">
-        {props.title} {props.items.length}
+        {props.title} ({props.items.length})
       </h2>
       <ul>
         {
@@ -22,40 +24,28 @@ function ProfileRelationsBox(props) {
               </li>
             )
           })}
-
       </ul>
     </ProfileRelationsBoxWrapper>
   )
 }
-export default function Home() {
+
+export default function Home(props) {
   const token = process.env.NEXT_PUBLIC_TOKEN;
 
-  const url_config = "?per_page=6&page=2"
+  //const url_config = "?per_page=6&page=2"
   const urlGitHub = "https://api.github.com/users/";
-  const githubUser = "beliciobcardoso";
-
-  const [communitys, setCommunitys] = React.useState([]);
-
-  const [user, setUser] = React.useState([]);
+  const githubUser = props.githubUser;
 
   const [following, setFollowing] = React.useState([]);
 
   const [followers, setFollowers] = React.useState([]);
 
+  const [communitys, setCommunitys] = React.useState([]);
+
   React.useEffect(() => {
 
-    //Usuario do GitHub
-    fetch(`${urlGitHub}${githubUser}`)
-      .then(async response => {
-        const json = await response.json();
-        return setUser(json);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-
     // API GitHub seguindo
-    fetch(`${urlGitHub}${githubUser}/following${url_config}`) //
+    fetch(`${urlGitHub}${githubUser}/following`)
       .then(async response => {
         const json = await response.json();
         return setFollowing(json);
@@ -65,7 +55,7 @@ export default function Home() {
       });
 
     // API GitHub seguidores
-    fetch(`${urlGitHub}${githubUser}/followers${url_config}`)
+    fetch(`${urlGitHub}${githubUser}/followers`)
       .then(async response => {
         const json = await response.json();
         return setFollowers(json);
@@ -86,7 +76,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           query: `query{
-            allCommunities(orderBy: id_DESC, first: "6") {
+            allCommunities(orderBy: id_DESC) {
               id
               title
               imageUrl
@@ -111,24 +101,37 @@ export default function Home() {
       <MainGrid>
         <div className="profileArea" style={{ gridArea: 'profileArea' }}>
           <Box as="aside">
-            <AlurakutMenuProfileSidebar user={user} githubUser={githubUser} />
+            <AlurakutMenuProfileSidebar githubUser={githubUser} />
           </Box >
         </div>
         <div className="welcomeArea" style={{ gridArea: 'welcomeArea' }}>
           <Box>
             <h1 className="title">
-              Bem-vindo(a), {user.name}
+              Bem-vindo(a), {props.user.name}
             </h1>
-
-            <OrkutNostalgicIconSet />
           </Box>
           <Box>
-            <h2 className="subTitle">
-              O que você gostaria de fazer?
-            </h2>
-            <form onSubmit={function handleCreateCommunity(e) {
-              e.preventDefault();
-              const communityDados = new FormData(e.target);
+            <ProfileRelationsBoxWrapper>
+              <h2 className="smallTitle">
+                Minhas Comunidades ({communitys.length})
+              </h2>
+
+              <ul>
+                {communitys.map((itemAtual) => {
+                  return (
+                    <li key={itemAtual.id}>
+                      <a href={`/communitys/${itemAtual.id}`} >
+                        <img src={itemAtual.imageUrl} />
+                        <span>{itemAtual.title}</span>
+                      </a>
+                    </li>
+                  )
+                })}
+              </ul>
+            </ProfileRelationsBoxWrapper>
+            <form onSubmit={function handleCreateCommunity(resultEvent) {
+              resultEvent.preventDefault();
+              const communityDados = new FormData(resultEvent.target);
               const communityTitle = communityDados.get('title');
               const communityImage = communityDados.get('image');
 
@@ -172,48 +175,56 @@ export default function Home() {
         </div>
         <div className="profileRelationsArea" style={{ gridArea: 'profileRelationsArea' }}>
 
-          <ProfileRelationsBoxWrapper>
-            <h2 className="smallTitle">
-              Seguido ({following.length})
-            </h2>
-
-            <ul>
-              {following.map((itemAtual, index) => {
-                return (
-                  <li key={itemAtual.id}>
-                    <a href={`/users/${itemAtual.login}`} >
-                      <img src={`${itemAtual.avatar_url}`} />
-                      <span>{itemAtual.login}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </ProfileRelationsBoxWrapper>
+          <ProfileRelationsBox title="Seguido" items={following} />
 
           <ProfileRelationsBox title="Seguidores" items={followers} />
-
-          <ProfileRelationsBoxWrapper>
-            <h2 className="smallTitle">
-              Comunidades ({communitys.length})
-            </h2>
-
-            <ul>
-              {communitys.map((itemAtual) => {
-                return (
-                  <li key={itemAtual.id}>
-                    <a href={`/communitys/${itemAtual.id}`} >
-                      <img src={itemAtual.imageUrl} />
-                      <span>{itemAtual.title}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </ProfileRelationsBoxWrapper>
 
         </div>
       </MainGrid>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+  const cookies = nookies.get(context);
+  const token = cookies.USER_TOKEN;
+  const decodedToken = jwt.decode(token);
+  const githubUser = decodedToken?.githubUser.trim();
+  const OAUTH_TOKEN = process.env.OAUTH_TOKEN;
+  let isAuthenticated;
+
+  if (!githubUser) {
+    return {
+      redirect: {
+        destination: '/loginPage',
+        permanent: false,
+      }
+    }
+
+  } else if (!isAuthenticated) {
+    const response = await fetch(`https://api.github.com/users/${githubUser}`, {
+      headers: {
+        'Authorization': OAUTH_TOKEN,
+      }
+    })
+    const user = await response.json();
+
+    isAuthenticated = response.ok;
+
+    if (!isAuthenticated) {
+      return {
+        redirect: {
+          destination: '/loginPage',
+          permanent: false,
+        }
+      }
+    } else {
+      return {
+        props: {
+          githubUser,
+          user
+        }
+      }
+    }
+  }
 }

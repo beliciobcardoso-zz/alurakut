@@ -1,8 +1,9 @@
 import React from 'react';
-import styled, { css } from 'styled-components';
 import NextLink from 'next/link';
+import styled, { css } from 'styled-components';
 
-const BASE_URL = 'http://alurakut.vercel.app/';
+const BASE_URL = 'http://alurakut.vercel.app';
+//const BASE_URL = 'http://alurakut-three-coral.vercel.app';
 const v = '1';
 
 
